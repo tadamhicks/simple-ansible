@@ -1,0 +1,28 @@
+---
+- hosts: apache
+  become: true
+  vars:
+          http_port: 9090
+          max_clients: 200
+  tasks:
+          - name: ensure apache is at latest version
+            apt: name=apache2 update_cache=yes state=latest
+
+          - name: ensure apache is running (and enable it at boot)
+            service: name=apache2 enabled=yes
+          
+          - name: configure apache listening port
+            lineinfile: dest=/etc/apache2/ports.conf regexp="^Listen " line="Listen {{ http_port }}" state=present
+            notify:
+                    - restart apache2
+
+          - name: configure MaxClients
+            lineinfile: dest=/etc/apache2/mods-enabled/mpm_event.conf 
+                        insertafter="^<IfModule mpm_event_module>"
+                        line="        MaxClients        200"
+                        state=present
+
+
+  handlers:
+          - name: restart apache2
+            service: name=apache2 state=restarted
