@@ -1,5 +1,5 @@
 ---
-- hosts: webservers
+- hosts: all
   become: true
   vars:
           http_port: 9090
