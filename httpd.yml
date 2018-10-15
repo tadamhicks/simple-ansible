@@ -2,28 +2,30 @@
 - hosts: all
   become: true
   vars:
-          http_port: 8090
-          conf_file: /etc/httpd/conf/httpd.conf
-          max_clients: 200
+      http_port: 8090
+      conf_file: /etc/httpd/conf/httpd.conf
+      max_clients: 200
   tasks:
-          - name: ensure apache is at latest version
-            yum: pkg=httpd state=latest
+      - name: Disable SELinux at next reboot
+        selinux:
+            state: disabled
 
-          - name: ensure apache is running (and enable it at boot)
-            systemd: name=httpd enabled=yes
+      - name: Set SELinux in permissive mode until the machine is rebooted
+        command: setenforce 0
+        ignore_errors: true
+        changed_when: false
+
+      - name: ensure apache is at latest version
+        yum: pkg=httpd state=latest
+
+      - name: ensure apache is running (and enable it at boot)
+        systemd: name=httpd enabled=yes
           
-          - name: configure apache listening port
-            lineinfile: dest={{ conf_file }} regexp="^Listen " line="Listen {{ http_port }}" state=present
-            notify:
-                    - restart httpd
-
-          - name: configure max clients for apache
-            lineinfile: dest={{ conf_file }} line="MaxClients {{ max_clients }}" state=present
-            notify:
-                    - restart httpd
-
-
+      - name: configure apache listening port
+        lineinfile: dest={{ conf_file }} regexp="^Listen " line="Listen {{ http_port }}" state=present
+        notify:
+            - restart httpd
 
   handlers:
-          - name: restart httpd
-            command: systemctl restart httpd
+      - name: restart httpd
+        command: systemctl restart httpd
